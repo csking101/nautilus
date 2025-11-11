@@ -67,7 +67,7 @@ RUN mkdir initramfs/
 COPY --from=user-linux-nitro /nsm.ko initramfs/nsm.ko
 COPY --from=core-busybox . initramfs
 COPY --from=core-python . initramfs
-RUN python3 -m pip install --target=initramfs/lib/python3.11/site-packages scikit-learn
+RUN python3 -m ensurepip && python3 -m pip install scikit-learn
 COPY --from=core-musl . initramfs
 COPY --from=core-ca-certificates /etc/ssl/certs initramfs
 COPY --from=core-busybox /bin/sh initramfs/sh
