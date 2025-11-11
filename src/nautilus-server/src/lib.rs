@@ -24,7 +24,7 @@ mod apps {
 
     #[cfg(feature = "ml-example")]
     #[path = "ml-example/mod.rs"]
-    pub mod l_example;
+    pub mod ml_example;
 }
 
 pub mod app {

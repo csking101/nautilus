@@ -17,8 +17,8 @@ use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MLResponse {
-    pub accuracy: f64,
-    pub loss: f64,
+    pub accuracy: u64,
+    pub loss: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,7 +32,7 @@ pub async fn process_data(
 ) -> Result<Json<ProcessedDataResponse<IntentMessage<MLResponse>>>, EnclaveError> {
     // Call Python script
     let output = Command::new("python3")
-        .arg("src/nautilus-server/src/apps/ml-example/dummy_task.py")
+        .arg("src/apps/ml-example/dummy_task.py")
         .arg(&request.payload.data_path)
         .output()
         .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python: {}", e)))?;
