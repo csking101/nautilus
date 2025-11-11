@@ -24,7 +24,7 @@ FROM stagex/user-jq@sha256:ced6213c21b570dde1077ef49966b64cbf83890859eff83f33c82
 
 # New: vendor pip source
 FROM python:3.9 AS pip_vendor
-RUN python3 -m pip install sklearn
+RUN python3 -m pip install scikit-learn
 
 FROM scratch as base
 ENV TARGET=x86_64-unknown-linux-musl
