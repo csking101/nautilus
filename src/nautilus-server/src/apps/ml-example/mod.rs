@@ -32,7 +32,7 @@ pub async fn process_data(
 ) -> Result<Json<ProcessedDataResponse<IntentMessage<MLResponse>>>, EnclaveError> {
     // Call Python script
     let output = Command::new("python3")
-        .arg("src/apps/ml-example/dummy_task.py")
+        .arg("src/apps/ml-example/ml_task.py")
         .arg(&request.payload.data_path)
         .output()
         .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python: {}", e)))?;
