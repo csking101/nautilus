@@ -1,9 +1,6 @@
 # Copyright (c), Mysten Labs, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-# This containerfile uses StageX (https://stagex.tools) images, which provide a
-# full source bootstrapped, deterministic, and hermetic build toolchain
-
 FROM stagex/core-binutils@sha256:83c66e9d7393d7004442f8c1f2ad0f69979cc2a9193222338f4736abf17b6752 AS core-binutils
 FROM stagex/core-ca-certificates@sha256:d6fca6c0080e8e5360cd85fc1c4bd3eab71ce626f40602e38488bfd61fd3e89d AS core-ca-certificates
 FROM stagex/core-gcc@sha256:125bd6306e7f37e57d377d5a189c0e499388aff42b22cc79acee6097357c617f AS core-gcc
@@ -24,6 +21,10 @@ FROM stagex/linux-nitro@sha256:073c4603686e3bdc0ed6755fee3203f6f6f1512e0ded09eae
 FROM stagex/user-cpio@sha256:2695e1b42f93ec3ea0545e270f0fda4adca3cb48d0526da01954efae1bce95c4 AS user-cpio
 FROM stagex/user-socat:local@sha256:acef3dacc5b805d0eaaae0c2d13f567bf168620aea98c8d3e60ea5fd4e8c3108 AS user-socat
 FROM stagex/user-jq@sha256:ced6213c21b570dde1077ef49966b64cbf83890859eff83f33c82620520b563e AS user-jq
+
+# New: vendor pip source
+FROM python:3.9 AS pip_vendor
+RUN python3 -m pip install scikit-learn
 
 FROM scratch as base
 ENV TARGET=x86_64-unknown-linux-musl
@@ -74,7 +75,6 @@ COPY --from=user-jq /bin/jq initramfs
 COPY --from=user-socat /bin/socat . initramfs
 RUN cp /target/${TARGET}/release/init initramfs
 RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
-RUN pip3.9 install scikit-learn
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
 
@@ -84,24 +84,19 @@ RUN <<-EOF
     find . -exec touch -hcd "@0" "{}" +
     find . -print0 \
     | sort -z \
-    | cpio \
-        --null \
-        --create \
-        --verbose \
-        --reproducible \
-        --format=newc \
+    | cpio --null --create --verbose --reproducible --format=newc \
     | gzip --best \
     > /build_cpio/rootfs.cpio
 EOF
 
 WORKDIR /build_eif
 RUN eif_build \
-	--kernel /bzImage \
-	--kernel_config /linux.config \
-	--ramdisk /build_cpio/rootfs.cpio \
-	--pcrs_output /nitro.pcrs \
-	--output /nitro.eif \
-	--cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
+  --kernel /bzImage \
+  --kernel_config /linux.config \
+  --ramdisk /build_cpio/rootfs.cpio \
+  --pcrs_output /nitro.pcrs \
+  --output /nitro.eif \
+  --cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
 
 FROM base as install
 WORKDIR /rootfs
