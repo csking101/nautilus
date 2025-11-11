@@ -1,0 +1,4 @@
+# Allowed endpoints for ml-example app
+process_data:
+  method: POST
+  path: /ml/process_data
