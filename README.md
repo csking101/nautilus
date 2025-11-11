@@ -9,3 +9,10 @@ This repository includes a reproducible build template for AWS Nitro Enclaves, a
 
 ## Contact Us
 For questions about Nautilus, use case discussions, or integration support, contact the Nautilus team on [Sui Discord](https://discord.com/channels/916379725201563759/1361500579603546223).
+
+## Example Apps
+
+- weather-example: Rust-based weather API demo
+- ml-example: Python-based ML demo (trains a simple model using scikit-learn inside the enclave)
+  - Shows how to run Python code for ML workloads in a Nitro Enclave
+  - See `src/nautilus-server/src/apps/ml-example/` for details
