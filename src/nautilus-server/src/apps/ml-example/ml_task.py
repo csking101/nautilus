@@ -19,7 +19,7 @@ def main():
     loss = 1 - accuracy
 
     # Output result as JSON
-    print(json.dumps({"accuracy": accuracy, "loss": loss}))
+    print(json.dumps({"accuracy": int(accuracy), "loss": int(loss)}))
 
 if __name__ == "__main__":
     main()
