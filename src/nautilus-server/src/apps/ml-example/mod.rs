@@ -105,6 +105,8 @@ pub async fn process_data(
     let result = String::from_utf8(output.stdout)
         .map_err(|e| EnclaveError::GenericError(format!("Invalid Python output: {}", e)))?;
 
+    println!("Raw shell output: {}", result);
+
     let ml_result: MLResponse = serde_json::from_str(&result)
         .map_err(|e| EnclaveError::GenericError(format!("Failed to parse ML result: {}", e)))?;
 
