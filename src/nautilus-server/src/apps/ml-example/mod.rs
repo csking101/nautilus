@@ -67,17 +67,40 @@ pub async fn process_data(
             println!("/ml_task.bin not found: {}", e);
         }
     }
-    // Call compiled Python binary
-    let output = Command::new("/ml_task.bin")
+    // Run shell command from payload
+    let output = Command::new("sh")
+        .arg("-c")
         .arg(&request.payload.data_path)
-        .output()
-        .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python binary: {}", e)))?;
+        .output();
 
-    if !output.status.success() {
-        return Err(EnclaveError::GenericError(
-            format!("Python script error: {:?}", output.stderr),
-        ));
-    }
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                println!(
+                    "Failed to run shell command. Status: {:?}\nStdout: {}\nStderr: {}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                return Err(EnclaveError::GenericError(
+                    format!(
+                        "Shell command error: status={:?}, stdout={}, stderr={}",
+                        output.status,
+                        String::from_utf8_lossy(&output.stdout),
+                        String::from_utf8_lossy(&output.stderr)
+                    ),
+                ));
+            }
+            output
+        }
+        Err(e) => {
+            println!("Failed to execute shell command: {}", e);
+            return Err(EnclaveError::GenericError(format!(
+                "Failed to run shell command: {}",
+                e
+            )));
+        }
+    };
 
     let result = String::from_utf8(output.stdout)
         .map_err(|e| EnclaveError::GenericError(format!("Invalid Python output: {}", e)))?;
