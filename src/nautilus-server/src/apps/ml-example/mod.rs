@@ -30,12 +30,11 @@ pub async fn process_data(
     State(state): State<Arc<AppState>>,
     Json(request): Json<ProcessDataRequest<MLRequest>>,
 ) -> Result<Json<ProcessedDataResponse<IntentMessage<MLResponse>>>, EnclaveError> {
-    // Call Python script
-    let output = Command::new("python3")
-        .arg("ml_task.py")
+    // Call compiled Python binary
+    let output = Command::new("/home/csking101/Desktop/coding/test/nautilus/src/nautilus-server/src/apps/ml-example/dist/ml_task")
         .arg(&request.payload.data_path)
         .output()
-        .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python: {}", e)))?;
+        .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python binary: {}", e)))?;
 
     if !output.status.success() {
         return Err(EnclaveError::GenericError(
