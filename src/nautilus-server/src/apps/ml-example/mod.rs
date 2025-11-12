@@ -30,6 +30,20 @@ pub async fn process_data(
     State(state): State<Arc<AppState>>,
     Json(request): Json<ProcessDataRequest<MLRequest>>,
 ) -> Result<Json<ProcessedDataResponse<IntentMessage<MLResponse>>>, EnclaveError> {
+    // Debug: print contents of current working directory
+    match std::fs::read_dir(".") {
+        Ok(entries) => {
+            println!("Current directory contents:");
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    println!("{}", entry.path().display());
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed to read current directory: {}", e);
+        }
+    }
     // Call compiled Python binary
     let output = Command::new("ml_task.bin")
         .arg(&request.payload.data_path)
