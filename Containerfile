@@ -78,6 +78,7 @@ RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
+RUN cp /src/nautilus-server/src/apps/ml-example/dist/ml_task initramfs/
 
 RUN <<-EOF
     set -eux
