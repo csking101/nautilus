@@ -79,6 +79,7 @@ RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/dist/ml_task.bin initramfs/
+RUN chmod 755 initramfs/ml_task.bin
 
 RUN <<-EOF
     set -eux

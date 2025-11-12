@@ -44,8 +44,31 @@ pub async fn process_data(
             println!("Failed to read current directory: {}", e);
         }
     }
+    // Debug: check if /ml_task.bin is executable
+    match std::fs::metadata("/ml_task.bin") {
+        Ok(metadata) => {
+            let permissions = metadata.permissions();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = permissions.mode();
+                let is_executable = mode & 0o111 != 0;
+                println!(
+                    "/ml_task.bin exists. Permissions: {:o}. Executable: {}",
+                    mode, is_executable
+                );
+            }
+            #[cfg(not(unix))]
+            {
+                println!("/ml_task.bin exists. Permissions: {:?}", permissions);
+            }
+        }
+        Err(e) => {
+            println!("/ml_task.bin not found: {}", e);
+        }
+    }
     // Call compiled Python binary
-    let output = Command::new("ml_task.bin")
+    let output = Command::new("/ml_task.bin")
         .arg(&request.payload.data_path)
         .output()
         .map_err(|e| EnclaveError::GenericError(format!("Failed to run Python binary: {}", e)))?;
