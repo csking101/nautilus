@@ -73,7 +73,7 @@ pub async fn process_data(
         .arg(&request.payload.data_path)
         .output();
 
-    match output {
+    let output = match output {
         Ok(output) => {
             if !output.status.success() {
                 println!(
