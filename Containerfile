@@ -82,9 +82,6 @@ RUN cp /src/nautilus-server/run.sh initramfs/
 ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 RUN python3 /tmp/get-pip.py && rm /tmp/get-pip.py
 
-# Install dependencies required to build scikit-learn from source
-RUN apk add --no-cache g++ gcc gfortran musl-dev openblas-dev
-
 # Install scientific stack (use binaries where possible)
 RUN pip3 install --no-cache-dir --prefer-binary numpy scipy scikit-learn
 
