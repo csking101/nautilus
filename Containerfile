@@ -83,7 +83,8 @@ ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 RUN python3 /tmp/get-pip.py && rm /tmp/get-pip.py
 
 # Install scientific stack (use binaries where possible)
-RUN pip3 install --no-cache-dir --prefer-binary numpy scipy scikit-learn
+RUN pip3 install --no-cache-dir --prefer-binary numpy scipy
+RUN pip3 install --no-cache-dir --prefer-binary scikit-learn
 
 # --- Add ML app and binaries ---
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
