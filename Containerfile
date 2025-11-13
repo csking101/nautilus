@@ -21,10 +21,8 @@ FROM stagex/linux-nitro@sha256:073c4603686e3bdc0ed6755fee3203f6f6f1512e0ded09eae
 FROM stagex/user-cpio@sha256:2695e1b42f93ec3ea0545e270f0fda4adca3cb48d0526da01954efae1bce95c4 AS user-cpio
 FROM stagex/user-socat:local@sha256:acef3dacc5b805d0eaaae0c2d13f567bf168620aea98c8d3e60ea5fd4e8c3108 AS user-socat
 FROM stagex/user-jq@sha256:ced6213c21b570dde1077ef49966b64cbf83890859eff83f33c82620520b563e AS user-jq
+FROM stagex/pallet-python@sha256:3001a748488441d3f97ce0e3ab9da27388a169c261cfd56250d8585f8868c4fc AS pallet-python
 
-# New: vendor pip source
-FROM python:3.9 AS pip_vendor
-RUN python3 -m pip install scikit-learn
 
 FROM scratch as base
 ENV TARGET=x86_64-unknown-linux-musl
@@ -51,6 +49,7 @@ COPY --from=user-cpio . /
 COPY --from=user-linux-nitro /bzImage .
 COPY --from=user-linux-nitro /nsm.ko .
 COPY --from=user-linux-nitro /linux.config .
+COPY --from=pallet-python . /
 
 FROM base as build
 COPY . .
@@ -68,6 +67,7 @@ RUN mkdir initramfs/
 COPY --from=user-linux-nitro /nsm.ko initramfs/nsm.ko
 COPY --from=core-busybox . initramfs
 COPY --from=core-python . initramfs
+COPY --from=pallet-python . initramfs
 COPY --from=core-musl . initramfs
 COPY --from=core-ca-certificates /etc/ssl/certs initramfs
 COPY --from=core-busybox /bin/sh initramfs/sh
@@ -77,6 +77,8 @@ RUN cp /target/${TARGET}/release/init initramfs
 RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
+RUN python3 -m ensurepip --upgrade && \
+    python3 -m pip install --no-cache-dir scikit-learn
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/dist/ml_task.bin initramfs/
 RUN chmod 755 initramfs/ml_task.bin
