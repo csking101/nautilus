@@ -78,10 +78,11 @@ RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
 
-# ✅ Bootstrap pip and install scikit-learn
 ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 RUN python3 /tmp/get-pip.py && rm /tmp/get-pip.py
-RUN pip3 install --no-cache-dir scikit-learn
+
+# Install required dependencies using binary wheels
+RUN pip3 install --no-cache-dir --only-binary=:all: numpy scipy scikit-learn
 
 # --- Add ML app and binaries ---
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
