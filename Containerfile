@@ -23,8 +23,7 @@ FROM stagex/user-socat:local@sha256:acef3dacc5b805d0eaaae0c2d13f567bf168620aea98
 FROM stagex/user-jq@sha256:ced6213c21b570dde1077ef49966b64cbf83890859eff83f33c82620520b563e AS user-jq
 FROM stagex/pallet-python@sha256:3001a748488441d3f97ce0e3ab9da27388a169c261cfd56250d8585f8868c4fc AS pallet-python
 
-
-FROM scratch as base
+FROM scratch AS base
 ENV TARGET=x86_64-unknown-linux-musl
 ENV RUSTFLAGS="-C target-feature=+crt-static"
 ENV CARGOFLAGS="--locked --no-default-features --release --target ${TARGET}"
@@ -51,7 +50,7 @@ COPY --from=user-linux-nitro /nsm.ko .
 COPY --from=user-linux-nitro /linux.config .
 COPY --from=pallet-python . /
 
-FROM base as build
+FROM base AS build
 COPY . .
 
 RUN cargo build --workspace --locked --no-default-features --release --target x86_64-unknown-linux-musl
@@ -77,8 +76,12 @@ RUN cp /target/${TARGET}/release/init initramfs
 RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
-RUN python3 -m ensurepip --upgrade && \
-    python3 -m pip install --no-cache-dir scikit-learn
+
+# ✅ Bootstrap pip and install scikit-learn
+ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
+RUN python3 /tmp/get-pip.py && rm /tmp/get-pip.py
+RUN pip3 install --no-cache-dir scikit-learn
+
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/dist/ml_task.bin initramfs/
 RUN chmod 755 initramfs/ml_task.bin
@@ -103,11 +106,11 @@ RUN eif_build \
   --output /nitro.eif \
   --cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
 
-FROM base as install
+FROM base AS install
 WORKDIR /rootfs
 COPY --from=build /nitro.eif .
 COPY --from=build /nitro.pcrs .
 COPY --from=build /build_cpio/rootfs.cpio .
 
-FROM scratch as package
+FROM scratch AS package
 COPY --from=install /rootfs .
