@@ -21,8 +21,8 @@ FROM stagex/linux-nitro@sha256:073c4603686e3bdc0ed6755fee3203f6f6f1512e0ded09eae
 FROM stagex/user-cpio@sha256:2695e1b42f93ec3ea0545e270f0fda4adca3cb48d0526da01954efae1bce95c4 AS user-cpio
 FROM stagex/user-socat:local@sha256:acef3dacc5b805d0eaaae0c2d13f567bf168620aea98c8d3e60ea5fd4e8c3108 AS user-socat
 FROM stagex/user-jq@sha256:ced6213c21b570dde1077ef49966b64cbf83890859eff83f33c82620520b563e AS user-jq
-FROM stagex/pallet-python@sha256:3001a748488441d3f97ce0e3ab9da27388a169c261cfd56250d8585f8868c4fc AS pallet-python
 
+# --- Base system setup ---
 FROM scratch AS base
 ENV TARGET=x86_64-unknown-linux-musl
 ENV RUSTFLAGS="-C target-feature=+crt-static"
@@ -48,8 +48,9 @@ COPY --from=user-cpio . /
 COPY --from=user-linux-nitro /bzImage .
 COPY --from=user-linux-nitro /nsm.ko .
 COPY --from=user-linux-nitro /linux.config .
-COPY --from=pallet-python . /
+COPY --from=core-python . /
 
+# --- Build Rust workspace ---
 FROM base AS build
 COPY . .
 
@@ -60,18 +61,18 @@ ARG ENCLAVE_APP
 ENV RUSTFLAGS="-C target-feature=+crt-static -C relocation-model=static -C target-cpu=x86-64"
 RUN cargo build --locked --no-default-features --features $ENCLAVE_APP --release --target x86_64-unknown-linux-musl
 
+# --- Build initramfs contents ---
 WORKDIR /build_cpio
 ENV KBUILD_BUILD_TIMESTAMP=1
 RUN mkdir initramfs/
 COPY --from=user-linux-nitro /nsm.ko initramfs/nsm.ko
 COPY --from=core-busybox . initramfs
 COPY --from=core-python . initramfs
-COPY --from=pallet-python . initramfs
 COPY --from=core-musl . initramfs
 COPY --from=core-ca-certificates /etc/ssl/certs initramfs
 COPY --from=core-busybox /bin/sh initramfs/sh
 COPY --from=user-jq /bin/jq initramfs
-COPY --from=user-socat /bin/socat . initramfs
+COPY --from=user-socat /bin/socat initramfs
 RUN cp /target/${TARGET}/release/init initramfs
 RUN cp /src/nautilus-server/target/${TARGET}/release/nautilus-server initramfs
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
@@ -82,10 +83,12 @@ ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
 RUN python3 /tmp/get-pip.py && rm /tmp/get-pip.py
 RUN pip3 install --no-cache-dir scikit-learn
 
+# --- Add ML app and binaries ---
 RUN cp /src/nautilus-server/src/apps/ml-example/ml_task.py initramfs/
 RUN cp /src/nautilus-server/src/apps/ml-example/dist/ml_task.bin initramfs/
 RUN chmod 755 initramfs/ml_task.bin
 
+# --- Pack rootfs.cpio reproducibly ---
 RUN <<-EOF
     set -eux
     cd initramfs
@@ -97,6 +100,7 @@ RUN <<-EOF
     > /build_cpio/rootfs.cpio
 EOF
 
+# --- EIF build ---
 WORKDIR /build_eif
 RUN eif_build \
   --kernel /bzImage \
@@ -106,11 +110,13 @@ RUN eif_build \
   --output /nitro.eif \
   --cmdline 'reboot=k initrd=0x2000000,3228672 root=/dev/ram0 panic=1 pci=off nomodules console=ttyS0 i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd'
 
+# --- Install phase ---
 FROM base AS install
 WORKDIR /rootfs
 COPY --from=build /nitro.eif .
 COPY --from=build /nitro.pcrs .
 COPY --from=build /build_cpio/rootfs.cpio .
 
+# --- Final package ---
 FROM scratch AS package
 COPY --from=install /rootfs .
